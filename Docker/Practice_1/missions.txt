@@ -1,0 +1,50 @@
+1. Run an interactive shell
+Goal: Run an official alpine container and get an interactive shell.
+Constraint: container removed on exit.
+Verify: you get an sh prompt inside container; after exit docker ps does not show it.
+Hint: docker run, -it, --rm.
+
+2. Detached web server
+Goal: Start nginx:latest detached and map host port 8080 → container 80.
+Verify: curl http://localhost:8080 returns HTML.
+Hint: -d, -p, container name useful.
+
+3. Exec into running container
+Goal: Exec a shell into the running nginx container and list /usr/share/nginx/html.
+Verify: file list shown inside exec session.
+Hint: docker exec, interactive.
+
+4.Copy file out of container
+Goal: Copy index.html from nginx container to host ./site_index.html.
+Verify: file exists on host and contains HTML.
+Hint: docker cp.
+
+5.Run command non-interactive
+Goal: Run alpine to print hello from docker and exit. No interactive shell.
+Verify: command prints message and container stops.
+Hint: docker run with command at end.
+
+6.List images and containers
+Goal: Show all images and all containers (including stopped).
+Verify: you can list both and see nginx image and earlier containers.
+Hint: docker images, docker ps flags.
+
+7.Remove stopped containers & dangling images
+Goal: Clean up stopped containers and dangling images without removing running ones.
+Verify: docker ps -a shows no stopped containers; docker images shows no <none> images.
+Hint: docker rm, docker image prune or docker system prune careful flags.
+
+8.Run container with env var and check it
+Goal: Run alpine printing env var MYFLAG=CTF from inside container.
+Verify: stdout includes CTF.
+Hint: -e and env or printenv inside container.
+
+9.Resource limit
+Goal: Start a small process container limited to 128MB memory and 0.5 CPU.
+Verify: container starts; docker inspect shows limits.
+Hint: --memory, --cpus.
+
+10.Attach a volume
+Goal: Create a named volume data_vol, run busybox that writes hello into /data/hello.txt, then run a new container that reads it.
+Verify: second container prints hello.
+Hint: -v name:/path.
