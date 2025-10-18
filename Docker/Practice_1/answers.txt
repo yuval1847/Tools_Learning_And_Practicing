@@ -1,19 +1,40 @@
 1.
+docker build -t q1_image -f q1.dockerfile .
+docker run --rm -it q1_image
 
 2.
+docker build -t q2_image -f q2.dockerfile .
+docker run -d -p 8080:80 q2_image
 
 3.
+# Note: I didn't stop the container from the last task.
+docker exec -it stoic_austin /bin/bash
 
 4.
+# Note: I didn't stop the container from the last task.
+docker cp stoic_austin:/usr/share/nginx/html/index.html ./
 
 5.
+docker build -f q5.dockerfile -t q5_image .
+docker run q5_image
 
 6.
+# Note: I added echo for space between the outputs
+docker images; echo ""; docker ps -a
 
 7.
+docker system prune
 
 8.
+docker build -f q8.dockerfile -t q8_image .
+docker run q8_image
 
 9.
+docker build -f q9.dockerfile -t q9_image .
+docker run -it --cpus="0.5" --memory 128m q9_image
 
 10.
+docker volume create data_vol
+docker build -f q10.dockerfile -t q10_image .
+docker run --rm -v data_vol:/data q10_image
+docker run --rm -v data_vol:/data busybox cat /data/hello.txt

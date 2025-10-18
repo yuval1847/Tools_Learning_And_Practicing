@@ -20,7 +20,7 @@ Verify: file exists on host and contains HTML.
 Hint: docker cp.
 
 5.Run command non-interactive
-Goal: Run alpine to print hello from docker and exit. No interactive shell.
+Goal: Run alpine to print hello world from docker and exit. No interactive shell.
 Verify: command prints message and container stops.
 Hint: docker run with command at end.
 
@@ -45,6 +45,7 @@ Verify: container starts; docker inspect shows limits.
 Hint: --memory, --cpus.
 
 10.Attach a volume
-Goal: Create a named volume data_vol, run busybox that writes hello into /data/hello.txt, then run a new container that reads it.
+Goal: Create a named volume data_vol, run busybox that writes hello 
+into /data/hello.txt, then run a new container that reads it.
 Verify: second container prints hello.
 Hint: -v name:/path.
