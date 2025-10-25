@@ -1,0 +1,4 @@
+# The python modules which are required to be installed on the container before running the program itself.
+argparse
+tqdm
+scapy
