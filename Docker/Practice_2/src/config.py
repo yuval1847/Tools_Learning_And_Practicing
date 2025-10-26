@@ -1,5 +1,5 @@
 import argparse
-from src.Techniques_Enum import Techniques
+from Techniques_Enum import Techniques
 
 # An object which can read flags when the script start to run
 parser = argparse.ArgumentParser(description="A basic port scanner that yuyu1847 has been created!")

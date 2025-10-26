@@ -19,5 +19,3 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # copy app source
 COPY src/ ./src
-
-CMD ["sh", "-c", "/bin/bash"]
