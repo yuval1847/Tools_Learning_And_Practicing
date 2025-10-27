@@ -1,6 +1,4 @@
-import socket
-import sys
-from scapy.all import IP, TCP, sr1, conf
+from scapy.all import IP, TCP, sr1, conf, UDP, ICMP
 conf.verb = 0  # Disable Scapy verbose output
 
 from config import args
@@ -32,11 +30,10 @@ class scannig_techniques:
                 results = scannig_techniques.tcp_syn_scan(target, ports)
             case Techniques.TCP_ACK_SCAN:
                 results = scannig_techniques.tcp_ack_scan(target, ports)
-                pass
             case Techniques.TCP_CONNECT_SCAN:
-                pass
+                results = scannig_techniques.tcp_connect_scan(target, ports)
             case Techniques.UDP_SCAN:
-                pass
+                results = scannig_techniques.udp_scan(target, ports)
             case _:
                 raise Exception("There is no such a type scan")
         return results
@@ -68,7 +65,6 @@ class scannig_techniques:
                 results.append((port, "tcp", "unknown_response"))
         return results
     
-
     @staticmethod
     def tcp_ack_scan(target:str, ports:list, timeout:int=1):
         """
@@ -90,8 +86,54 @@ class scannig_techniques:
                 results.append((port, "tcp", "unknown_response"))
         return results
     
+    @staticmethod
+    def tcp_connect_scan(target:str, ports:list):
+        """
+        A function which performs a tcp connect scan on the specified ports on the target.
+        """
+        results = []
+        for port in ports:
+            pkt = IP(dst=target)/TCP(dport=port, flags="S")
+            if results is None:
+                results.append((port, "tcp", "filtered"))
+            elif pkt.haslayer(TCP):
+                tcp_layer = pkt.getlayer(TCP)
+                if tcp_layer.flags & 0x12:  # SYN+ACK -> open
+                    results.append((port, "tcp", "open"))
+                elif tcp_layer.flags & 0x4:  # RST -> closed
+                    results.append((port, "tcp", "closed"))
+                else:
+                    results.append((port, "tcp", f"unknown_flags:{tcp_layer.flags}"))
+            else:
+                results.append((port, "tcp", "unknown_response"))
+        return results
 
-    
+    @staticmethod
+    def udp_scan(target:str, ports:list):
+        """
+        A function which performs a udp scan on the specified ports on the target.
+        """
+        results = []
+        for port in ports:
+            pkt = IP(dst=target)/UDP(dport=port)
+            resp = sr1(pkt, timeout=1)
+            if resp is None:
+                results.append((port, "udp", "open|filtered"))
+            elif resp.haslayer(UDP):
+                results.append((port, "udp", "open"))
+            elif resp.haslayer(ICMP):
+                icmp_layer = resp.getlayer(ICMP)
+                if icmp_layer.type == 3 and icmp_layer.code == 3:
+                    results.append((port, "udp", "closed"))
+                elif icmp_layer.type == 3 and icmp_layer.code in [1, 2, 9, 10, 13]:
+                    results.append((port, "udp", "filtered"))
+                else:
+                    results.append((port, "udp", f"unknown_icmp_type_code:{icmp_layer.type}_{icmp_layer.code}"))
+            else:
+                results.append((port, "udp", "unknown_response"))
+        return results
+
+
     @staticmethod
     def print_results(results):
         """
