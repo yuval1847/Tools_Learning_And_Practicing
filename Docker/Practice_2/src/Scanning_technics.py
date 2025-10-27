@@ -31,6 +31,7 @@ class scannig_techniques:
             case Techniques.TCP_SYN_SCAN:
                 results = scannig_techniques.tcp_syn_scan(target, ports)
             case Techniques.TCP_ACK_SCAN:
+                results = scannig_techniques.tcp_ack_scan(target, ports)
                 pass
             case Techniques.TCP_CONNECT_SCAN:
                 pass
@@ -44,7 +45,7 @@ class scannig_techniques:
     @staticmethod
     def tcp_syn_scan(target:str, ports:list, timeout:int=1):
         """
-        A function which performs a tcp syn scan on the specified ports on the target and returns the results.
+        A function which performs a tcp syn scan on the specified ports on the target and returns the results (filtered - no response, probably dropped by firewall, open - the port is open, close - the port is close).
         """
         results = []
         for port in ports:
@@ -61,6 +62,28 @@ class scannig_techniques:
                     results.append((port, "tcp", "open"))
                 elif tcp_layer.flags & 0x14:  # RST+ACK -> closed
                     results.append((port, "tcp", "closed"))
+                else:
+                    results.append((port, "tcp", f"unknown_flags:{tcp_layer.flags}"))
+            else:
+                results.append((port, "tcp", "unknown_response"))
+        return results
+    
+
+    @staticmethod
+    def tcp_ack_scan(target:str, ports:list, timeout:int=1):
+        """
+        A function which performs a tcp ack scan on the specified ports on the target and returns the results (filtered - no response probably dropped by firewall, unfiltered - the port is open or close (the propuse of this scan is to check if there is a firewall)).
+        """
+        results = []
+        for port in ports:
+            pkt = IP(dst=target)/TCP(dport=port, flags="A")
+            resp = sr1(pkt, timeout=timeout)
+            if resp is None:
+                results.append((port, "tcp", "filtered"))
+            elif resp.haslayer(TCP):
+                tcp_layer = resp.getlayer(TCP)
+                if tcp_layer.flags & 0x4:  # RST -> unfiltered
+                    results.append((port, "tcp", "unfiltered"))
                 else:
                     results.append((port, "tcp", f"unknown_flags:{tcp_layer.flags}"))
             else:
