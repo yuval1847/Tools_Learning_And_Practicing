@@ -1,0 +1,7 @@
+services:
+  pentool:
+    build: .
+    volumes:
+      - ./:/app          # bind mount for development (keeps source in sync)
+    working_dir: /app
+    tty: true
