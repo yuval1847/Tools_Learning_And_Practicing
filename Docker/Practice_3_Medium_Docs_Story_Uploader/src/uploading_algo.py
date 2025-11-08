@@ -16,17 +16,16 @@ class medium_docs_upload_session:
     A class which handles uploading documents to Medium.com 
     """
 
-    def __init__(self):
-        self.user_integration_token = None
-        self.user_id = None
-        self.new_story = story()
-
-
-    def connect(self, user_integration_token:str):
-        """
-        Connect to Medium API using the provided integration token.
-        """
+    def __init__(self, user_integration_token:str, story_title=""):
         self.user_integration_token = user_integration_token
+        self.user_id = None
+        self.new_story = story(title=story_title)
+
+
+    def connect(self):
+        """
+        A function which connect to Medium API using the provided integration token and retrieves the user ID.
+        """
         headers = {'Content-type': 'application/json',
                    'Accept': 'text/plain',
                    'Host': MEDIUM_API_SUBDOMAIN,
@@ -101,14 +100,20 @@ class medium_docs_upload_session:
                         image_counter += 1
 
 
-    def upload_image(self, image):
+    def upload_image(self, image_url:str):
         """
         Upload an image to Medium.com and return the image URL.
         """
-        pass
+        with open(image_url, "rb") as f:
+            image_upload = requests.post(
+                "https://"+MEDIUM_API_SUBDOMAIN+"/v1/images",
+                headers={"Authorization": f"Bearer {self.user_integration_token}"},
+                files={"image": f}
+            ).json()
+        return image_upload["data"]["url"]
 
 
-    def upload_story_content(self, story_title:str, story_content_html:str, publish_status:str="draft"):
+    def upload_story_content(self, publish_status:str="draft", story_tags_lst:list=[]):
         """
         Upload the story content to Medium.com
         """
@@ -122,9 +127,10 @@ class medium_docs_upload_session:
                    "Authorization": self.user_integration_token}
 
         post_data = {
-            "title": story_title,
+            "title": self.new_story.title,
             "contentFormat": "html",
-            "content": story_content_html,
+            "content": self.new_story.get_content_as_html(),
+            "tags": story_tags_lst,
             "publishStatus": publish_status
         }
 
@@ -135,4 +141,4 @@ class medium_docs_upload_session:
         if medium_story_upload_request.status_code != 201:
             raise Exception("Failed to upload story to Medium")
         else:
-            return medium_story_upload_request.json()['data']['url']
+            print("Story uploaded successfully! Story URL: " + medium_story_upload_request.json()['data']['url'])
