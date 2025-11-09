@@ -29,7 +29,7 @@ class story:
         html_content = ""
         for item in self.content:
             if item["type"] == "text":
-                html_content += f'<p>{item['value']}</p>\n'
+                html_content += f'<p>{item["value"]}</p>\n'
             elif item["type"] == "image":
-                html_content += f'<img src="{item['value']}"\n'
+                html_content += f'<img src="{item["value"]}"\n'
         return html_content
