@@ -3,7 +3,6 @@ A python tool that automate the proess of uploadinng docs files as storing to th
 """
 
 from uploading_algo import medium_docs_upload_session
-from chrome_profile_handling import choose_profile
 
 
 def print_welcome_message():
@@ -26,16 +25,17 @@ def print_welcome_message():
 ║  ✧ Year: 2025                                                  ║
 ║                                                                ║
 ╚════════════════════════════════════════════════════════════════╝
-* Note: This automation works only with google chrome browser!\n""")
+* Note: This automation works only with edge browser!\n
+You can't use it while there is any edge proccess running.
+Please close all edge windows and proccesses before using this tool.""")
 
 def main():
     print_welcome_message()
 
     story_title = input("Enter the story title: ")
     docx_path = input("Enter the path to the .docx file: ")
-    selected_google_profile = choose_profile()
 
-    uploader = medium_docs_upload_session(story_title=story_title, google_profile=selected_google_profile)
+    uploader = medium_docs_upload_session(story_title)
     uploader.read_docs_file(docx_path)
     uploader.upload_story_content()
 

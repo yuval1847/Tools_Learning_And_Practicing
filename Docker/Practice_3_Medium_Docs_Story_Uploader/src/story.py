@@ -26,7 +26,7 @@ class story:
         """
         Get the story content as a single HTML string.
         """
-        html_content = ""
+        html_content = f'<h1>{self.title}</h1>\n'
         for item in self.content:
             if item["type"] == "text":
                 html_content += f'<p>{item["value"]}</p>\n'

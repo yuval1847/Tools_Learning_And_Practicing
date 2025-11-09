@@ -1,10 +1,14 @@
 import os
 import time
+import shutil
 from story import *
 from docx import Document
 from selenium import webdriver
-from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.edge.options import Options
+from selenium.webdriver.edge.service import Service
 from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 
 
 class medium_docs_upload_session:
@@ -12,9 +16,8 @@ class medium_docs_upload_session:
     A class which handles uploading documents to Medium.com 
     """
 
-    def __init__(self, story_title="", google_profile=None):
+    def __init__(self, story_title=""):
         self.new_story = story(title=story_title)
-        self.google_profile = google_profile
 
 
     def read_docs_file(self, docx_path:str):
@@ -43,17 +46,10 @@ class medium_docs_upload_session:
         """
         Upload the story content to Medium.com
         """
-        user_data_dir, profile_dir = self.google_profile
-        # assume user_data_dir is a Path, profile_dir is the profile folder name (e.g., "Default", "Profile 1")
-        options = webdriver.ChromeOptions()
-        options.add_argument(f"--user-data-dir={user_data_dir}")   # e.g. C:\Users\...\User Data
-        options.add_argument(f'--profile-directory={profile_dir}')  # e.g. Default or Profile 1
-        # optional: start maximized
-        options.add_argument("--start-maximized")
-
-        # IMPORTANT: ensure Chrome is fully closed before launching with the same profile
-        driver = webdriver.Chrome(options=options)
-        time.sleep(5)  # wait for browser to start
+        options = Options()
+        options.debugger_address = "localhost:9222"
+        service = Service(r"C:/Users/USER/Downloads/msedgedriver.exe")
+        driver = webdriver.Edge(options=options, service=service)
         try:
             # Navigate to new story page
             driver.get("https://medium.com/new-story")
@@ -61,11 +57,6 @@ class medium_docs_upload_session:
             # Wait for user to log in manually
             print("Please log in manually if not already, then press Enter...")
             input()
-
-            # Fill in title
-            title_field = driver.find_element(By.CSS_SELECTOR, 'textarea[placeholder="Title"]')
-            title_field.clear()
-            title_field.send_keys(self.new_story.title)
 
             # Fill in story content
             content_html = self.new_story.get_content_as_html()
