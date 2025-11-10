@@ -22,6 +22,19 @@ class story:
         self.content.append({"type": "image", "value": image_path})
 
 
+    def get_content_as_text(self):
+        """
+        Get the story content as a single text string.
+        """
+        text_content = f'{self.title}\n\n'
+        for item in self.content:
+            if item["type"] == "text":
+                text_content += f'{item["value"]}\n\n'
+            elif item["type"] == "image":
+                text_content += f'[Image: {item["value"]}]\n\n'
+        return text_content
+
+
     def get_content_as_html(self):
         """
         Get the story content as a single HTML string.
