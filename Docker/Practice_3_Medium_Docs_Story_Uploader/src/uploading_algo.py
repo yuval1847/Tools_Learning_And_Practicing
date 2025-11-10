@@ -12,6 +12,10 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.action_chains import ActionChains
 
+import win32clipboard
+import io
+from PIL import Image
+
 
 class medium_docs_upload_session:
     """
@@ -130,15 +134,44 @@ class medium_docs_upload_session:
         time.sleep(0.2)
         print("✅ Text inserted (keystrokes).")
 
-    def upload_image(self, driver, wait, image_local_path:str):
-        add_image_button = driver.find_element(By.CSS_SELECTOR, 'button[data-action="inline-menu-image"]')
-        add_image_button.click()
-        image_input = driver.find_element(By.CSS_SELECTOR, 'input[type="file"][accept^="image/"]')
-        image_input.send_keys(image_local_path)
-        WebDriverWait(driver, 20).until(
-            EC.presence_of_element_located((By.CSS_SELECTOR, 'figure img'))
+    def upload_image(self, driver, wait, image_local_path: str):
+        """
+        Upload an image to Medium by copying it to the clipboard and pasting it
+        into the last content paragraph. This method bypasses the inline menu/input.
+        """
+
+        # Step 1: Load image and copy to clipboard
+        image = Image.open(image_local_path)
+
+        output = io.BytesIO()
+        image.convert("RGB").save(output, "BMP")
+        data = output.getvalue()[14:]  # skip BMP header
+        output.close()
+
+        # Set image in clipboard
+        win32clipboard.OpenClipboard()
+        win32clipboard.EmptyClipboard()
+        win32clipboard.SetClipboardData(win32clipboard.CF_DIB, data)
+        win32clipboard.CloseClipboard()
+
+        # Step 2: Wait for at least one content paragraph
+        content_element = wait.until(
+            EC.presence_of_element_located((By.CSS_SELECTOR, 'p[data-testid="editorParagraphText"]'))
         )
-        print("✅ Image inserted")
+
+        # Step 3: Focus the last paragraph
+        paras = driver.find_elements(By.CSS_SELECTOR, 'p[data-testid="editorParagraphText"]')
+        last_para = paras[-1]
+        last_para.click()
+
+        # Step 4: Paste from clipboard
+        last_para.send_keys(Keys.CONTROL, 'v')
+
+        # Step 5: Wait for the image to appear in the editor
+        wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, 'figure img')))
+
+        print("✅ Image pasted successfully")
+
 
 
     def upload_story_content(self):
