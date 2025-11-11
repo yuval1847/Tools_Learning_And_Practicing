@@ -200,37 +200,62 @@ class medium_docs_upload_session:
         into the last content paragraph. This method bypasses the inline menu/input.
         """
 
-        # Step 1: Load image and copy to clipboard
+        # --- Step 1: Copy image to clipboard ---
         image = Image.open(image_local_path)
-
         output = io.BytesIO()
         image.convert("RGB").save(output, "BMP")
         data = output.getvalue()[14:]  # skip BMP header
         output.close()
 
-        # Set image in clipboard
         win32clipboard.OpenClipboard()
         win32clipboard.EmptyClipboard()
         win32clipboard.SetClipboardData(win32clipboard.CF_DIB, data)
         win32clipboard.CloseClipboard()
 
-        # Step 2: Wait for at least one content paragraph
-        content_element = wait.until(
-            EC.presence_of_element_located((By.CSS_SELECTOR, 'p[data-testid="editorParagraphText"]'))
-        )
+        # --- Step 2: Wait until editor paragraphs are visible ---
+        wait.until(EC.presence_of_element_located(
+            (By.CSS_SELECTOR, 'p[data-testid="editorParagraphText"]')
+        ))
 
-        # Step 3: Focus the last paragraph
-        paras = driver.find_elements(By.CSS_SELECTOR, 'p[data-testid="editorParagraphText"]')
-        last_para = paras[-1]
+        # --- Step 3: Scroll to bottom of the page ---
+        driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+        time.sleep(0.4)
+
+        # --- Step 4: Focus the last paragraph and create a new one ---
+        paragraphs = driver.find_elements(By.CSS_SELECTOR, 'p[data-testid="editorParagraphText"]')
+        if not paragraphs:
+            raise Exception("No paragraphs found in editor.")
+
+        last_para = paragraphs[-1]
+        driver.execute_script("arguments[0].scrollIntoView(true);", last_para)
         last_para.click()
+        time.sleep(0.2)
 
-        # Step 4: Paste from clipboard
-        last_para.send_keys(Keys.CONTROL, 'v')
+        # Move caret to end of paragraph and create a new line for the image
+        last_para.send_keys(Keys.END)
+        time.sleep(0.1)
+        last_para.send_keys(Keys.ENTER)
+        time.sleep(0.3)
 
-        # Step 5: Wait for the image to appear in the editor
+        # --- Step 5: Find the new empty paragraph (Medium adds one at bottom) ---
+        new_paragraphs = driver.find_elements(By.CSS_SELECTOR, 'p[data-testid="editorParagraphText"]')
+        if len(new_paragraphs) > len(paragraphs):
+            target_para = new_paragraphs[-1]
+        else:
+            # fallback: use the same last one if Medium merged them
+            target_para = last_para
+
+        target_para.click()
+        time.sleep(0.2)
+
+        # --- Step 6: Paste the image from clipboard ---
+        target_para.send_keys(Keys.CONTROL, 'v')
+
+        # --- Step 7: Wait until the image actually appears in the editor ---
         wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, 'figure img')))
+        time.sleep(0.3)
 
-        print("✅ Image pasted successfully")
+        print("✅ Image pasted successfully at the bottom of the story.")
 
 
 
