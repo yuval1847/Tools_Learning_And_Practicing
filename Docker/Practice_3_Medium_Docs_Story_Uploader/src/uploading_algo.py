@@ -2,7 +2,12 @@ import os
 import time
 import shutil
 from story import *
+
 from docx import Document
+from docx.oxml.ns import qn
+from docx.text.paragraph import Paragraph
+from docx.table import Table
+
 from selenium import webdriver
 from selenium.webdriver.edge.options import Options
 from selenium.webdriver.edge.service import Service
@@ -26,26 +31,81 @@ class medium_docs_upload_session:
         self.new_story = story(title=story_title)
 
 
-    def read_docs_file(self, docx_path:str):
+    def read_docs_file(self, docx_path: str):
         """
-        Read the content of a .docs file.
+        Read the content of a .docx file, preserving the order of text and images.
+        Adds text and images to self.new_story in the same order they appear in the docx.
         """
-        # A temporary folder for images
         tmp_dir = f"tmp_docx_images_{int(time.time())}"
         os.makedirs(tmp_dir, exist_ok=True)
-        print(os.path.exists(docx_path))  # True if Python can see it
+
         doc = Document(docx_path)
 
-        for i, para in enumerate(doc.paragraphs):
-            self.new_story.add_text(para.text)
+        # helper to save an image part and return its path
+        def save_image_part(image_part, index):
+            # determine extension from content type, fallback to png
+            content_type = getattr(image_part, "content_type", "")
+            ext = content_type.split("/")[-1] if "/" in content_type else "png"
+            img_path = os.path.join(tmp_dir, f"image_{index}.{ext}")
+            with open(img_path, "wb") as f:
+                f.write(image_part.blob)
+            return img_path
 
-        for i, rel in enumerate(doc.part.rels):
-            rel = doc.part.rels[rel]
-            if "image" in rel.target_ref:
-                img_path = f"{tmp_dir}/image_{i}.png"
-                with open(img_path, "wb") as f:
-                    f.write(rel.target_part.blob)
-                self.new_story.add_image(img_path)
+        image_counter = 0
+
+        # iterate over the document body children (preserves order)
+        for child in doc.element.body:
+            tag = child.tag
+            if tag == qn('w:p'):  # paragraph
+                p = Paragraph(child, doc)  # wrap into python-docx Paragraph
+                # iterate runs so we can capture text and images in the correct order
+                for run in p.runs:
+                    # first, any textual content in the run
+                    if run.text and run.text.strip() != "":
+                        self.new_story.add_text(run.text)
+
+                    # then check the run for images (blip elements)
+                    # a:blip with r:embed attribute references the image rId
+                    blips = run._element.xpath('.//a:blip')
+                    for blip in blips:
+                        rId = blip.get(qn('r:embed'))  # rId like 'rId5'
+                        if not rId:
+                            continue
+                        # get the related part via the document part relationships
+                        try:
+                            rel = doc.part.rels[rId]
+                            image_part = rel.target_part
+                        except Exception:
+                            # fallback - some docx versions store related_parts differently
+                            image_part = doc.part.related_parts.get(rId, None)
+                        if image_part is None:
+                            continue
+                        img_path = save_image_part(image_part, image_counter)
+                        image_counter += 1
+                        self.new_story.add_image(img_path)
+
+                # if paragraph had no runs with text or images but you want to keep blank paragraph
+                if not p.runs and p.text.strip() == "":
+                    # optional: keep blank paragraph if you want
+                    # self.new_story.add_text("")
+                    pass
+
+            elif tag == qn('w:tbl'):  # table
+                tbl = Table(child, doc)
+                # add table content as text blocks (row by row)
+                for row in tbl.rows:
+                    row_texts = []
+                    for cell in row.cells:
+                        cell_text = cell.text.strip()
+                        if cell_text:
+                            row_texts.append(cell_text)
+                    if row_texts:
+                        # join cells by a separator (customize as you like)
+                        self.new_story.add_text(" | ".join(row_texts))
+
+            else:
+                # other block types (sectPr etc.) — ignore or handle if needed
+                pass
 
     
     def upload_title(self, driver, wait):
@@ -197,12 +257,14 @@ class medium_docs_upload_session:
             # Insert the title
             self.upload_title(driver, wait)
 
+            print(self.new_story.content)
+
             # Insert each paragraph
-            for paragraph in self.new_story.content:
-                if paragraph["type"] == "text":
-                    self.upload_text(driver, wait, paragraph["value"])
-                elif paragraph["type"] == "image":
-                    self.upload_image(driver, wait, paragraph["value"])
+            for i in self.new_story.content:
+                if i[0] == "text":
+                    self.upload_text(driver, wait, i[1])
+                elif i[0] == "image":
+                    self.upload_image(driver, wait, i[1])
                 
 
             print("✅ Content inserted")
