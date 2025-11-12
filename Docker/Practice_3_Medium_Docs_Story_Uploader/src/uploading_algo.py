@@ -179,7 +179,7 @@ class medium_docs_upload_session:
             # After each paragraph except the last, press ENTER to create a new paragraph,
             # then move caret to the end of that newly-created paragraph
             if i != len(paragraphs) - 1:
-                last_para.send_keys(Keys.ENTER)
+                # last_para.send_keys(Keys.ENTER)
                 time.sleep(timeout_after_each_paragraph)
 
                 # re-locate the last paragraph (Medium creates a new <p>)
@@ -197,7 +197,7 @@ class medium_docs_upload_session:
     def upload_image(self, driver, wait, image_local_path: str):
         """
         Upload an image to Medium by copying it to the clipboard and pasting it
-        into the last content paragraph. This method bypasses the inline menu/input.
+        after the last visible paragraph (not splitting it).
         """
 
         # --- Step 1: Copy image to clipboard ---
@@ -212,50 +212,52 @@ class medium_docs_upload_session:
         win32clipboard.SetClipboardData(win32clipboard.CF_DIB, data)
         win32clipboard.CloseClipboard()
 
-        # --- Step 2: Wait until editor paragraphs are visible ---
+        # --- Step 2: Wait until paragraphs are ready ---
         wait.until(EC.presence_of_element_located(
             (By.CSS_SELECTOR, 'p[data-testid="editorParagraphText"]')
         ))
 
-        # --- Step 3: Scroll to bottom of the page ---
+        # --- Step 3: Scroll to bottom ---
         driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
         time.sleep(0.4)
 
-        # --- Step 4: Focus the last paragraph and create a new one ---
+        # --- Step 4: Find last paragraph ---
         paragraphs = driver.find_elements(By.CSS_SELECTOR, 'p[data-testid="editorParagraphText"]')
         if not paragraphs:
-            raise Exception("No paragraphs found in editor.")
-
+            raise Exception("No paragraphs found in Medium editor.")
         last_para = paragraphs[-1]
-        driver.execute_script("arguments[0].scrollIntoView(true);", last_para)
-        last_para.click()
+
+        # --- Step 5: Place caret *after* the paragraph text using JS ---
+        driver.execute_script("""
+            const el = arguments[0];
+            const range = document.createRange();
+            const sel = window.getSelection();
+            range.selectNodeContents(el);
+            range.collapse(false);  // move to end
+            sel.removeAllRanges();
+            sel.addRange(range);
+        """, last_para)
         time.sleep(0.2)
 
-        # Move caret to end of paragraph and create a new line for the image
-        last_para.send_keys(Keys.END)
-        time.sleep(0.1)
+        # --- Step 6: Press Enter to create a *new empty paragraph* after the last one ---
         last_para.send_keys(Keys.ENTER)
+        time.sleep(0.4)
+
+        # --- Step 7: Focus new empty paragraph ---
+        new_paragraphs = driver.find_elements(By.CSS_SELECTOR, 'p[data-testid="editorParagraphText"]')
+        target_para = new_paragraphs[-1]
+        target_para.click()
         time.sleep(0.3)
 
-        # --- Step 5: Find the new empty paragraph (Medium adds one at bottom) ---
-        new_paragraphs = driver.find_elements(By.CSS_SELECTOR, 'p[data-testid="editorParagraphText"]')
-        if len(new_paragraphs) > len(paragraphs):
-            target_para = new_paragraphs[-1]
-        else:
-            # fallback: use the same last one if Medium merged them
-            target_para = last_para
-
-        target_para.click()
-        time.sleep(0.2)
-
-        # --- Step 6: Paste the image from clipboard ---
+        # --- Step 8: Paste image from clipboard ---
         target_para.send_keys(Keys.CONTROL, 'v')
 
-        # --- Step 7: Wait until the image actually appears in the editor ---
+        # --- Step 9: Wait until image appears ---
         wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, 'figure img')))
-        time.sleep(0.3)
+        time.sleep(0.5)
 
-        print("✅ Image pasted successfully at the bottom of the story.")
+        print("✅ Image successfully inserted after the last paragraph (no text split).")
+
 
 
 
