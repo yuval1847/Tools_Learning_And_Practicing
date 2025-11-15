@@ -110,7 +110,6 @@ class medium_docs_upload_session:
     
     def upload_title(self, driver, wait):
         # Wait until the title field appears
-        print("Waiting for title element...")
         title_element = wait.until(
             EC.presence_of_element_located((By.CSS_SELECTOR, 'h3[data-testid="editorTitleParagraph"]'))
         )
@@ -121,7 +120,6 @@ class medium_docs_upload_session:
             el.textContent = text;
             el.dispatchEvent(new InputEvent('input', { bubbles: true }));
         """, title_element, self.new_story.title)
-        print("✅ Title inserted")
 
     def upload_text(self, driver, wait, text: str, timeout_after_each_paragraph=0.15):
         """
@@ -131,7 +129,6 @@ class medium_docs_upload_session:
         - sending keys (so React sees native keyboard events)
         Splits text by newline and inserts paragraphs in order.
         """
-        print("Waiting for at least one content paragraph...")
         # Wait for at least one content paragraph to exist
         content_element = wait.until(
             EC.presence_of_element_located((By.CSS_SELECTOR, 'p[data-testid="editorParagraphText"]'))
@@ -192,7 +189,6 @@ class medium_docs_upload_session:
 
         # small wait to ensure editor processed the keystrokes
         time.sleep(0.2)
-        print("✅ Text inserted (keystrokes).")
 
     def upload_image(self, driver, wait, image_local_path: str):
         """
@@ -256,10 +252,6 @@ class medium_docs_upload_session:
         wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, 'figure img')))
         time.sleep(0.5)
 
-        print("✅ Image successfully inserted after the last paragraph (no text split).")
-
-
-
 
     def upload_story_content(self):
         """
@@ -284,7 +276,8 @@ class medium_docs_upload_session:
             # Insert the title
             self.upload_title(driver, wait)
 
-            print(self.new_story.content)
+            # Enhance content text
+            self.new_story.enhance_content_text()
 
             # Insert each paragraph
             for i in self.new_story.content:

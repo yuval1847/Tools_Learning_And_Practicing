@@ -4,14 +4,15 @@ A python tool that automate the proess of uploadinng docs files as storing to th
 
 from uploading_algo import medium_docs_upload_session
 import subprocess
+from colorama import Fore, Style, Back
 
 
 def print_welcome_message():
-    print("""
-███╗   ███╗██████╗ ███████╗██╗   ██╗    ╔══════\\
-████╗ ████║██╔══██╗██╔════╝██║   ██║    ║   ▄▄  \\
+    print(f"""{Fore.BLUE}
+███╗   ███╗██████╗ ███████╗██╗   ██╗    ╔════════╗
+████╗ ████║██╔══██╗██╔════╝██║   ██║    ║  ▄▄▄▄  ║
 ██╔████╔██║██║  ██║███████╗██║   ██║    ║ ▄▄▄ ▄▄ ║
-██║╚██╔╝██║██║  ██║╚════██║██║   ██║    ║ ▄▄▄▄▄▄ ║ 
+██║╚██╔╝██║██║  ██║╚════██║██║   ██║    ║ ▄▄▄▄▄▄ ║
 ██║ ╚═╝ ██║██████╔╝███████║╚██████╔╝    ║ ▄▄▄▄ ▄ ║
 ╚═╝     ╚═╝╚═════╝ ╚══════╝ ╚═════╝     ╚════════╝
 ╔════════════════════════════════════════════════════════════════╗
@@ -26,10 +27,13 @@ def print_welcome_message():
 ║  ✧ Year: 2025                                                  ║
 ║                                                                ║
 ╚════════════════════════════════════════════════════════════════╝
-* Note: This automation works only with edge browser!\n
+{Fore.RED}
+✦ Note: This automation works only with edge browser!
 You can't use it while there is any edge proccess running.
-Please close all edge windows and proccesses before using this tool.""")
-    
+Please close all edge windows and proccesses before using this tool.\n
+✦ Note: After a story is uploaded, it is recommended to inspect it and fix mistakes as needed.{Style.RESET_ALL}{Fore.BLUE}\n""")
+
+
 def terminate_edge_processes():
     """
     A function which terminate all edge proccesses using powershell command.
@@ -57,7 +61,8 @@ def main():
     uploader = medium_docs_upload_session(story_title)
     uploader.read_docs_file(docx_path)
     uploader.upload_story_content()
-
+    
+    print(Style.RESET_ALL)
 
 if __name__ == "__main__":
     main()

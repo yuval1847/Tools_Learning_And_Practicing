@@ -14,35 +14,20 @@ class story:
         """
         self.content.append(["text", paragraph_text])
 
+    def enhance_content_text(self):
+        """
+        A function which enhance the story content text. 
+        """
+
+        # Add \n after each ':'
+        for i in range(len(self.content)):
+            if self.content[i][0] == "text":
+                paragraph = self.content[i][1]
+                enhanced_paragraph = paragraph.replace(":", ":\n")
+                self.content[i][1] = enhanced_paragraph
 
     def add_image(self, image_path:str):
         """
         Add an image to the story content.
         """
         self.content.append(["image", image_path])
-
-
-    # def get_content_as_text(self):
-    #     """
-    #     Get the story content as a single text string.
-    #     """
-    #     text_content = f'{self.title}\n\n'
-    #     for item in self.content:
-    #         if item["type"] == "text":
-    #             text_content += f'{item["value"]}\n\n'
-    #         elif item["type"] == "image":
-    #             text_content += f'[Image: {item["value"]}]\n\n'
-    #     return text_content
-
-
-    # def get_content_as_html(self):
-    #     """
-    #     Get the story content as a single HTML string.
-    #     """
-    #     html_content = f'<h1>{self.title}</h1>\n'
-    #     for item in self.content:
-    #         if item["type"] == "text":
-    #             html_content += f'<p>{item["value"]}</p>\n'
-    #         elif item["type"] == "image":
-    #             html_content += f'<img src="{item["value"]}"\n'
-    #     return html_content
